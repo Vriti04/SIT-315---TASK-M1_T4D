@@ -86,8 +86,8 @@ ISR(PCINT2_vect) {
   currentState_Temp = PIND & B00001000;
 }
 
-// Timer Compare Interrupt Service Routine
+
 ISR(TIMER1_COMPA_vect) {
-  // No need for any code here, just resetting the timer
+ 
   TCNT1 = timer;
 }
