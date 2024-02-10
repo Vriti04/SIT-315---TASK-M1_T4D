@@ -1,0 +1,93 @@
+const int motion_pin = 5;
+const int button = 2;
+const int temp_pin = A5;
+const int LED = 2;
+const int light_pin = A0;
+const int LED2 = 3;
+const int LED3 = 4;
+
+volatile uint8_t currentState_M = LOW;
+volatile uint8_t currentState_Light = LOW;
+volatile uint16_t currentState_Temp = LOW;
+
+volatile uint8_t previousState_M = LOW;
+volatile uint8_t previousState_Light = LOW;
+volatile uint16_t previousState_Temp = LOW;
+
+const uint16_t timer = 0;
+const uint16_t compare = 31250;
+
+const int lightThreshold = 5; // Adjust this value according to your light threshold requirement
+const int tempThreshold = 50; // Adjust this value according to your temperature threshold requirement
+
+void setup() {
+  // Pin Change Interrupt Setup
+  PCICR |= (1 << PCIE2);
+  PCMSK2 |= ((1 << PCINT19) | (1 << PCINT20) | (1 << PCINT21)); // Pin change interrupts for motion_pin, light_pin, and temp_pin
+  
+  // Timer Setup
+  TCCR1A = 0;
+ // Set timer prescaler to 64 (instead of 256)
+TCCR1B |= (1 << CS11);
+TCCR1B &= ~(1 << CS12);
+TCCR1B &= ~(1 << CS10);
+  TCNT1 = timer;
+  OCR1A = compare;
+  TIMSK1 = (1 << OCIE1A); // Enable timer compare interrupt
+  
+  // Serial Setup
+  Serial.begin(9600);
+  
+  // Pin Mode Setup
+  pinMode(motion_pin, INPUT);
+  pinMode(LED, OUTPUT);
+  pinMode(temp_pin, INPUT);
+  pinMode(LED2, OUTPUT);
+  pinMode(LED3, OUTPUT);
+  pinMode(light_pin, INPUT);
+}
+
+void loop() {
+  // Main code runs in interrupt service routines (ISRs), no need for code here
+
+  currentState_M = digitalRead(motion_pin); // Read motion sensor state
+  currentState_Light = analogRead(light_pin); // Read light sensor value
+  currentState_Temp = analogRead(temp_pin); // Read temperature sensor value
+  
+  // Toggle LED for sensor interrupts
+  if (previousState_M != currentState_M) {
+    Serial.println("INTERRUPT- MOTION");
+    digitalWrite(LED, currentState_M);
+    previousState_M = currentState_M;
+  }
+  
+  if (previousState_Light != currentState_Light && currentState_Light > lightThreshold) {
+    Serial.print("INTERRUPT- LIGHT: ");
+    Serial.println(currentState_Light);
+    digitalWrite(LED3, currentState_Light);
+    previousState_Light = currentState_Light;
+  }
+  else{digitalWrite(LED3, LOW);}
+  
+  // Check temperature threshold
+  if (previousState_Temp != currentState_Temp && currentState_Temp > tempThreshold) {
+    Serial.print("INTERRUPT- TEMPERATURE: ");
+    Serial.println(currentState_Temp);
+    digitalWrite(LED2, currentState_Temp);
+    previousState_Temp = currentState_Temp;
+  }
+       else { digitalWrite(LED2, LOW);}
+  }
+
+
+ISR(PCINT2_vect) {
+  currentState_M = PIND & B00010000;
+  currentState_Light = PIND & B00000100;
+  currentState_Temp = PIND & B00001000;
+}
+
+// Timer Compare Interrupt Service Routine
+ISR(TIMER1_COMPA_vect) {
+  // No need for any code here, just resetting the timer
+  TCNT1 = timer;
+}
