@@ -23,7 +23,7 @@ const int tempThreshold = 50;
 void setup() {
   // Pin Change Interrupt Setup
   PCICR |= (1 << PCIE2);
-  PCMSK2 |= ((1 << PCINT19) | (1 << PCINT20) | (1 << PCINT21)); 
+  PCMSK2 |= ((1 << PCINT19) | (1 << PCINT20) | (1 << PCINT21));  //A5, A6, A7
   
 
   TCCR1A = 0;
